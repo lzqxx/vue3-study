@@ -1,0 +1,12 @@
+# idea
+.idea/*
+
+# Mac
+.DS_Store
+
+# svn
+.svn/*
+
+node_modules/*
+
+dist/*
