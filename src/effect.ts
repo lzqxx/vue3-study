@@ -1,47 +1,74 @@
+import { extend } from "./shared";
+
 const targetMap = new Map();
 let activeEffect: any;
 
 export type EffectScheduler = (...args: any[]) => any;
 
 class ReactiveEffect {
-  constructor(public fn: Function, public scheduler?: Function | null) {
-    console.log("创建 ReactiveEffect 对象");
-  }
+  deps = [];
+  onStop: Function | undefined;
+  constructor(public fn: Function, public scheduler?: Function | null) {}
 
   run() {
     activeEffect = this;
-    return this.fn();
+    // 触发get事件收集依赖
+    let result = this.fn();
+    // 依赖收集完后清掉
+    activeEffect = null;
+    return result;
   }
+
+  stop() {
+    clearupEffect(this);
+    this.onStop && this.onStop();
+  }
+}
+
+function clearupEffect(effect: ReactiveEffect) {
+  effect.deps.forEach((dep: Set<any>) => {
+    dep.delete(effect);
+  });
 }
 
 interface reactiveEffectOption {
   scheduler?: EffectScheduler;
+  onStop?: Function;
 }
 
-export function effect(fn: Function, options?: reactiveEffectOption | null) {
+export function effect(fn: any, options?: reactiveEffectOption | null) {
   const _effect = new ReactiveEffect(fn);
-  _effect.scheduler = options?.scheduler;
+  extend(_effect, options);
   _effect.run();
 
-  // _effect.run.bind(_effect);
-  return _effect.run.bind(_effect);
+  const runner: any = _effect.run.bind(_effect);
+  runner.effect = _effect;
+
+  return runner;
 }
 
 export function track(target: object, key: any) {
   if (!activeEffect) return;
 
+  // 对象依赖
   let targetDeps = targetMap.get(target);
   if (!targetDeps) {
     targetDeps = new Map();
     targetMap.set(target, targetDeps);
   }
 
-  let deps = targetDeps.get(key);
-  if (!deps) {
-    deps = new Set();
-    targetDeps.set(key, deps);
+  // 字段属性依赖
+  let dep = targetDeps.get(key);
+  if (!dep) {
+    dep = new Set();
+    targetDeps.set(key, dep);
   }
-  deps.add(activeEffect);
+  // 属性上增加一个依赖
+  if (!dep.has(activeEffect)) {
+    dep.add(activeEffect);
+    // 依赖挂上属性依赖
+    activeEffect.deps.push(dep);
+  }
 }
 
 export function trigger(target: any, key: any) {
@@ -49,7 +76,7 @@ export function trigger(target: any, key: any) {
   if (!targetDeps) return;
 
   const deps = targetDeps.get(key);
-  if (!deps || deps.length === 0) return;
+  if (!deps || deps.size === 0) return;
 
   deps.forEach((dep: any) => {
     if (dep.scheduler) {
@@ -58,4 +85,8 @@ export function trigger(target: any, key: any) {
       dep.run();
     }
   });
+}
+
+export function stop(runner: any) {
+  runner.effect.stop();
 }
