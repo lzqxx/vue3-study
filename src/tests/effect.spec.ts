@@ -41,30 +41,20 @@ it("scheduler", () => {
 
 it("stop", () => {
   let dummy;
-  const obj = reactive({ prop: 1 });
-  const runner = effect(() => {
-    dummy = obj.prop;
-  });
-  obj.prop = 2;
-  expect(dummy).toBe(2);
+    const obj = reactive({ prop: 1 });
+    const runner = effect(() => {
+      dummy = obj.prop;
+    });
+    obj.prop = 2;
+    expect(dummy).toBe(2);
+    stop(runner);
+    // obj.prop = 3
+    obj.prop++;
+    expect(dummy).toBe(2);
 
-  stop(runner);
-  obj.prop++; // 3
-  expect(dummy).toBe(2);
-
-  // stopped effect should still be manually callable
-  runner();
-  obj.prop++; // 4
-  expect(dummy).toBe(4);
-
-  // 再次绑定后，再stop的测试
-  stop(runner);
-  obj.prop++; // 5
-  expect(dummy).toBe(4);
-
-  runner();
-  obj.prop++; // 6
-  expect(dummy).toBe(6);
+    // stopped effect should still be manually callable
+    runner();
+    expect(dummy).toBe(3);
 });
 
 it("events: onStop", () => {
@@ -76,3 +66,25 @@ it("events: onStop", () => {
   stop(runner);
   expect(onStop).toHaveBeenCalled();
 });
+
+it('stop: a stopped effect is nested in a normal effect', () => {
+  let dummy
+  const obj = reactive({ prop: 1 })
+  const runner = effect(() => {
+    dummy = obj.prop
+  })
+  stop(runner)
+  obj.prop = 2
+  expect(dummy).toBe(1)
+
+  // observed value in inner stopped effect
+  // will track outer effect as an dependency
+  effect(() => {
+    runner()
+  })
+  expect(dummy).toBe(2)
+
+  // notify outer effect to run
+  obj.prop = 3
+  expect(dummy).toBe(3)
+})
