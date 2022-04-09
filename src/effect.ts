@@ -8,9 +8,15 @@ export type EffectScheduler = (...args: any[]) => any;
 class ReactiveEffect {
   deps = [];
   onStop: Function | undefined;
+  active: boolean = true;
   constructor(public fn: Function, public scheduler?: Function | null) {}
 
   run() {
+    // fix: 解决stop再runner后，无法stop的问题
+    if (!this.active) {
+      this.active = true;
+    }
+
     activeEffect = this;
     // 触发get事件收集依赖
     let result = this.fn();
@@ -19,9 +25,14 @@ class ReactiveEffect {
     return result;
   }
 
+  // 实际上是清除，不是单词stop停止的含义
   stop() {
-    clearupEffect(this);
-    this.onStop && this.onStop();
+    // 优化重复调用stop的性能问题
+    if (this.active) {
+      clearupEffect(this);
+      this.onStop && this.onStop();
+      this.active = false;
+    }
   }
 }
 

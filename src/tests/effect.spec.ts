@@ -47,14 +47,24 @@ it("stop", () => {
   });
   obj.prop = 2;
   expect(dummy).toBe(2);
+
   stop(runner);
-  // obj.prop = 3
-  obj.prop++;
+  obj.prop++; // 3
   expect(dummy).toBe(2);
 
   // stopped effect should still be manually callable
   runner();
-  expect(dummy).toBe(3);
+  obj.prop++; // 4
+  expect(dummy).toBe(4);
+
+  // 再次绑定后，再stop的测试
+  stop(runner);
+  obj.prop++; // 5
+  expect(dummy).toBe(4);
+
+  runner();
+  obj.prop++; // 6
+  expect(dummy).toBe(6);
 });
 
 it("events: onStop", () => {
