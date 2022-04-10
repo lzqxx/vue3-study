@@ -1,7 +1,8 @@
 import { extend } from "./shared";
 
 const targetMap = new Map();
-let activeEffect: any;
+let activeEffect: any = null;
+let shouldTrack = false; // 是否在收集依赖，用activeEffect可判断，但此处用此变量更有语义化
 
 export type EffectScheduler = (...args: any[]) => any;
 
@@ -17,11 +18,13 @@ class ReactiveEffect {
       this.active = true;
     }
 
+    shouldTrack = true;
     activeEffect = this;
     // 触发get事件收集依赖
     let result = this.fn();
     // 依赖收集完后清掉
     activeEffect = null;
+    shouldTrack = false;
     return result;
   }
 
@@ -59,7 +62,7 @@ export function effect(fn: any, options?: reactiveEffectOption | null) {
 }
 
 export function track(target: object, key: any) {
-  if (!activeEffect) return;
+  if (!isTracking()) return;
 
   // 对象依赖
   let targetDeps = targetMap.get(target);
@@ -74,11 +77,26 @@ export function track(target: object, key: any) {
     dep = new Set();
     targetDeps.set(key, dep);
   }
+  trackEffects(dep);
+}
+
+export function isTracking() {
+  return shouldTrack && activeEffect;
+}
+
+export function trackEffects(dep: any) {
   // 属性上增加一个依赖
   if (!dep.has(activeEffect)) {
     dep.add(activeEffect);
     // 依赖挂上属性依赖
     activeEffect.deps.push(dep);
+  }
+}
+
+export function trackRefValue(ref: any) {
+  if (isTracking()) {
+    // effect执行时 activeEffect 会赋值，然后收集依赖
+    trackEffects(ref.dep);
   }
 }
 
@@ -89,11 +107,15 @@ export function trigger(target: any, key: any) {
   const deps = targetDeps.get(key);
   if (!deps || deps.size === 0) return;
 
-  deps.forEach((dep: any) => {
-    if (dep.scheduler) {
-      dep.scheduler();
+  triggerEffects(deps);
+}
+
+export function triggerEffects(dep: any) {
+  dep.forEach((effect: any) => {
+    if (effect.scheduler) {
+      effect.scheduler();
     } else {
-      dep.run();
+      effect.run();
     }
   });
 }
