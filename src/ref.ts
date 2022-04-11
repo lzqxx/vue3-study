@@ -1,4 +1,4 @@
-import { isTracking, trackRefValue, triggerEffects } from "./effect";
+import { isTracking, trackEffects, triggerEffects } from "./effect";
 import { reactive } from "./reactive";
 import { hasChanged, isObject } from "./shared";
 
@@ -35,8 +35,16 @@ function convert(value: any) {
   return isObject(value) ? reactive(value) : value;
 }
 
-function triggerRefValue(ref: any) {
+export function triggerRefValue(ref: any) {
   triggerEffects(ref.dep);
+}
+
+
+export function trackRefValue(ref: any) {
+  if (isTracking()) {
+    // effect执行时 activeEffect 会赋值，然后收集依赖
+    trackEffects(ref.dep);
+  }
 }
 
 export function ref(value: any) {

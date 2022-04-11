@@ -6,7 +6,7 @@ let shouldTrack = false; // 是否在收集依赖，用activeEffect可判断，�
 
 export type EffectScheduler = (...args: any[]) => any;
 
-class ReactiveEffect {
+export class ReactiveEffect {
   deps = [];
   onStop: Function | undefined;
   active: boolean = true;
@@ -90,13 +90,6 @@ export function trackEffects(dep: any) {
     dep.add(activeEffect);
     // 依赖挂上属性依赖
     activeEffect.deps.push(dep);
-  }
-}
-
-export function trackRefValue(ref: any) {
-  if (isTracking()) {
-    // effect执行时 activeEffect 会赋值，然后收集依赖
-    trackEffects(ref.dep);
   }
 }
 
