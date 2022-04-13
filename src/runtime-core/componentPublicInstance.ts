@@ -17,5 +17,7 @@ export const PublicInstanceProxyHandlers = {
       return publicGetter(instance);
     }
 
+    
+
   },
 };

@@ -60,9 +60,18 @@ function mountElement(vnode: any, container: any) {
     mountChildren(vnode, el);
   }
 
+  const isOn = (prop: string): boolean => {
+    return /^on[A-Z]/.test(prop);
+  };
+
   for (const key in props) {
     const val = props[key];
-    el.setAttribute(key, val);
+    if (isOn(key)) {
+      const eventName = key.slice(2).toLowerCase();
+      el.addEventListener(eventName, val);
+    } else {
+      el.setAttribute(key, val);
+    }
   }
 
   container.append(el);
