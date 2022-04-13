@@ -54,6 +54,7 @@ function mountElement(vnode: any, container: any) {
 
   let el = (vnode.el = document.createElement(type));
 
+  // children
   if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
     el.textContent = children;
   } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
@@ -64,6 +65,7 @@ function mountElement(vnode: any, container: any) {
     return /^on[A-Z]/.test(prop);
   };
 
+  // props
   for (const key in props) {
     const val = props[key];
     if (isOn(key)) {
