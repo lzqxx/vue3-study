@@ -1,6 +1,6 @@
 import {
   h
-} from "../lib/vue3-study.esm.js";
+} from "../../lib/vue3-study.esm.js";
 
 export const Foo = {
   name: "Foo",

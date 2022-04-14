@@ -1,6 +1,6 @@
 import {
   createApp
-} from "../lib/vue3-study.esm.js";
+} from "../../lib/vue3-study.esm.js";
 import {
   App
 } from "./App.js";
