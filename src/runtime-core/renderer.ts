@@ -1,7 +1,7 @@
 import { isObject, isString } from "../shared";
 import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
-import { Fragment,Text } from "./vnode";
+import { Fragment, Text } from "./vnode";
 
 export function render(vnode: any, container: any) {
   patch(vnode, container);

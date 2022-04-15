@@ -12,7 +12,7 @@ export const App = {
       {},
       {
         header: ({ age }) => [
-          h("p", {}, "header" + age),
+          h("p", {}, "header, age = " + age),
           createTextVNode("你好呀"),
         ],
         footer: () => h("p", {}, "footer"),
