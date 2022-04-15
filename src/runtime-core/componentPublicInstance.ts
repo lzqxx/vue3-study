@@ -4,6 +4,7 @@ const publicPropertiesMap: any = {
   $el: (i: any) => {
     return i.vnode.el;
   },
+  $slots: (i: any) => i.slots,
 };
 
 export const PublicInstanceProxyHandlers = {

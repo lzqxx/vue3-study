@@ -1,16 +1,27 @@
 import { isObject, isString } from "../shared";
 import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
+import { Fragment,Text } from "./vnode";
 
 export function render(vnode: any, container: any) {
   patch(vnode, container);
 }
 
 function patch(vnode: any, container: any) {
-  if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
-    processElement(vnode, container);
-  } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
-    processComponent(vnode, container);
+  switch (vnode.type) {
+    case Fragment:
+      processFragment(vnode, container);
+      break;
+    case Text:
+      processText(vnode, container);
+      break;
+    default:
+      if (vnode.shapeFlag & ShapeFlags.ELEMENT) {
+        processElement(vnode, container);
+      } else if (vnode.shapeFlag & ShapeFlags.STATEFUL_COMPONENT) {
+        processComponent(vnode, container);
+      }
+      break;
   }
 }
 
@@ -44,6 +55,16 @@ function setupRenderEffect(instance: any, initialVNode: any, container: any) {
 
 function processElement(vnode: any, container: any) {
   mountElement(vnode, container);
+}
+
+function processFragment(vnode: any, container: any) {
+  mountChildren(vnode, container);
+}
+
+function processText(vnode: any, container: any) {
+  const { children } = vnode;
+  const textNode = (vnode.el = document.createTextNode(children));
+  container.append(textNode);
 }
 
 function mountElement(vnode: any, container: any) {
