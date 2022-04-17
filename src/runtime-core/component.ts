@@ -3,9 +3,8 @@ import { emit } from "./componentEmit";
 import { initProps } from "./componentProps";
 import { PublicInstanceProxyHandlers } from "./componentPublicInstance";
 import { initSlots } from "./componentSlots";
-import { createVNode, Fragment } from "./vnode";
 
-export function createComponentInstance(vnode: any) {
+export function createComponentInstance(vnode: any, parent: any) {
   const component = {
     vnode,
     type: vnode.type,
@@ -13,6 +12,8 @@ export function createComponentInstance(vnode: any) {
     props: {},
     slots: {},
     emit: () => {},
+    provides: parent ? parent.provides : {},
+    parent,
   };
 
   component.emit = emit.bind(null, component) as any;
@@ -64,7 +65,7 @@ function finishComponentSetup(instance: any) {
 }
 
 let currentInstance: object | null = null;
-export function getCurrentInstance(): object | null {
+export function getCurrentInstance(): any {
   return currentInstance;
 }
 

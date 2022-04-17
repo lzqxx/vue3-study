@@ -8,6 +8,10 @@ export function isString(value: any) {
   return value !== null && typeof value === "string";
 }
 
+export function isFunction(value: any) {
+  return value !== null && typeof value === "function";
+}
+
 export function hasChanged(value: any, oldValye: any) {
   return !Object.is(value, oldValye);
 }
