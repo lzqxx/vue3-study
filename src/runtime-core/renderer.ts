@@ -4,7 +4,11 @@ import { createAppAPI } from "./createApp";
 import { Fragment, Text } from "./vnode";
 
 export function createRenderer(options: any) {
-  const { createElement, patchProps, insert } = options;
+  const {
+    createElement: hostCreateElement,
+    patchProps: hostPatchProps,
+    insert: hostInsert,
+  } = options;
 
   function render(vnode: any, container: any) {
     patch(vnode, container, null);
@@ -81,7 +85,7 @@ export function createRenderer(options: any) {
     const { shapeFlag } = vnode;
 
     // let el = (vnode.el = document.createElement(type));
-    let el = (vnode.el = createElement(type));
+    let el = (vnode.el = hostCreateElement(type));
 
     // children
     if (shapeFlag & ShapeFlags.TEXT_CHILDREN) {
@@ -89,8 +93,6 @@ export function createRenderer(options: any) {
     } else if (shapeFlag & ShapeFlags.ARRAY_CHILDREN) {
       mountChildren(vnode, el, parentComponent);
     }
-
-    
 
     // props
     for (const key in props) {
@@ -101,11 +103,11 @@ export function createRenderer(options: any) {
       // } else {
       //   el.setAttribute(key, val);
       // }
-      patchProps(el, key, val);
+      hostPatchProps(el, key, val);
     }
 
     // container.append(el);
-    insert(el, container);
+    hostInsert(el, container);
   }
 
   function mountChildren(vnode: any, el: any, parentComponent: any) {
@@ -116,6 +118,6 @@ export function createRenderer(options: any) {
 
   return {
     // 为了暴露render，封装函数把render当参数暴露出去
-    createApp: createAppAPI(render)
+    createApp: createAppAPI(render),
   };
 }
