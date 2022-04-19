@@ -1,4 +1,5 @@
 import { effect } from "../reactivity/effect";
+import { EMPTY_OBJ } from "../shared";
 import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
 import { createAppAPI } from "./createApp";
@@ -7,7 +8,7 @@ import { Fragment, Text } from "./vnode";
 export function createRenderer(options: any) {
   const {
     createElement: hostCreateElement,
-    patchProps: hostPatchProps,
+    patchProp: hostPatchProp,
     insert: hostInsert,
   } = options;
 
@@ -99,6 +100,35 @@ export function createRenderer(options: any) {
     console.log("更新element");
     console.log("n1", n1);
     console.log("n2", n2);
+
+    const oldProps = n1.props || EMPTY_OBJ;
+    const newProps = n2.props || EMPTY_OBJ;
+
+    // 新vnode带上el
+    let el = (n2.el = n1.el);
+    patchProps(el, oldProps, newProps);
+  }
+
+  function patchProps(el: any, oldProps: any, newProps: any) {
+    if (oldProps !== newProps) {
+      // 有新prop或prop有改变
+      for (const key in newProps) {
+        let prevProp = oldProps[key];
+        let nextProp = newProps[key];
+
+        if (prevProp !== nextProp) {
+          hostPatchProp(el, key, prevProp, nextProp);
+        }
+      }
+      // 有prop被移除
+      if (oldProps !== EMPTY_OBJ) {
+        for (const key in oldProps) {
+          if (!(key in newProps)) {
+            hostPatchProp(el, key, oldProps[key], null);
+          }
+        }
+      }
+    }
   }
 
   function processFragment(
@@ -141,7 +171,7 @@ export function createRenderer(options: any) {
       // } else {
       //   el.setAttribute(key, val);
       // }
-      hostPatchProps(el, key, val);
+      hostPatchProp(el, key, null, val);
     }
 
     // container.append(el);

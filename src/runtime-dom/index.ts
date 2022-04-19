@@ -4,16 +4,20 @@ function createElement(type: string) {
   return document.createElement(type);
 }
 
-function patchProps(el: any, key: string, val: string) {
+function patchProp(el: any, key: string, prevVal: string, nextVal: string) {
   const isOn = (prop: string): boolean => {
     return /^on[A-Z]/.test(prop);
   };
 
   if (isOn(key)) {
     const eventName = key.slice(2).toLowerCase();
-    el.addEventListener(eventName, val);
+    el.addEventListener(eventName, nextVal);
   } else {
-    el.setAttribute(key, val);
+    if (nextVal === null || nextVal === undefined) {
+      el.removeAttribute(key);
+    } else {
+      el.setAttribute(key, nextVal);
+    }
   }
 }
 
@@ -23,7 +27,7 @@ function insert(el: any, container: any) {
 
 const renderer: any = createRenderer({
   createElement,
-  patchProps,
+  patchProp,
   insert,
 });
 
