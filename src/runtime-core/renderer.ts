@@ -169,7 +169,8 @@ export function createRenderer(options: any) {
     parentComponent: any,
     parentAnchor: any
   ) {
-    // 先左右侧无变化对比
+    // 前端很多时候前后节点没变化
+    // 先左右侧无变化对比，缩小后面遍历范围
     // 再中间区变化区比对
     let i = 0;
     let l2 = c2.length;
@@ -218,17 +219,69 @@ export function createRenderer(options: any) {
         let anchor = nextPos < l2 ? c2[nextPos].el : null;
         while (i <= e2) {
           patch(null, c2[i], container, parentComponent, anchor);
-          i++
+          i++;
         }
       }
     } else if (i > e2) {
       // 变少
-      while(i <= e1) {
+      while (i <= e1) {
         hostRemove(c1[e1].el);
         e1--;
       }
     } else {
       // 中间区域差异
+
+      let s1 = i;
+      let s2 = i;
+
+      let toBePatched = e2 - s2 + 1;
+      let patched = 0; // 新的能命中的数量
+      // key 与节点映射关系
+      const keyToNewIndexMap = new Map();
+      for (let i = s2; i <= e2; i++) {
+        // 没 key 可能有问题
+        if (c2[i].key) {
+          keyToNewIndexMap.set(c2[i].key, i);
+        }
+      }
+
+      // 删掉没了的
+      for (let i = s1; i <= e1; i++) {
+        const prevChild = c1[i];
+
+        // map 已全命中
+        if (patched >= toBePatched) {
+          hostRemove(prevChild.el);
+          continue;
+        }
+
+        let newIndex;
+        if (prevChild.key) {
+          newIndex = keyToNewIndexMap.get(prevChild.key);
+        } else {
+          // 没key,遍历c2中间区
+          for (let j = s2; j <= e2; j++) {
+            if (isSomeVNodeType(prevChild, c2[j])) {
+              newIndex = j;
+              break;
+            }
+          }
+        }
+
+        if (newIndex === undefined) {
+          // 删除
+          hostRemove(prevChild.el);
+        } else {
+          patch(
+            prevChild,
+            c2[newIndex],
+            container,
+            parentComponent,
+            parentAnchor
+          );
+          patched++;
+        }
+      }
     }
   }
 
