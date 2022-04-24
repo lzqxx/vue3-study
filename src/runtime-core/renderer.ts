@@ -2,6 +2,7 @@ import { effect } from "../reactivity/effect";
 import { EMPTY_OBJ } from "../shared";
 import { ShapeFlags } from "../shared/ShapeFlags";
 import { createComponentInstance, setupComponent } from "./component";
+import { shouldUpdateComponent } from "./componentUpdateUtils";
 import { createAppAPI } from "./createApp";
 import { Fragment, Text } from "./vnode";
 
@@ -50,7 +51,23 @@ export function createRenderer(options: any) {
     parentComponent: any,
     anchor: any
   ) {
-    mountComponent(n2, container, parentComponent, anchor);
+    if (!n1) {
+      mountComponent(n2, container, parentComponent, anchor);
+    } else {
+      updateComponent(n1, n2);
+    }
+  }
+
+  function updateComponent(n1: any, n2: any) {
+    const instance = (n2.component = n1.component);
+    if (shouldUpdateComponent(n1, n2)) {
+      instance.next = n2;
+      instance.update();
+    } else {
+      n2.el = n1.el;
+      instance.vnode = n2;
+    }
+   
   }
 
   function mountComponent(
@@ -59,7 +76,10 @@ export function createRenderer(options: any) {
     parentComponent: any,
     anchor: any
   ) {
-    const instance = createComponentInstance(initialVNode, parentComponent);
+    const instance = (initialVNode.component = createComponentInstance(
+      initialVNode,
+      parentComponent
+    ));
 
     setupComponent(instance);
     setupRenderEffect(instance, initialVNode, container, anchor);
@@ -71,7 +91,7 @@ export function createRenderer(options: any) {
     container: any,
     anchor: any
   ) {
-    effect(() => {
+    instance.update = effect(() => {
       if (!instance.isMounted) {
         const { proxy } = instance;
         const subTree = (instance.subTree = instance.render.call(proxy));
@@ -89,6 +109,13 @@ export function createRenderer(options: any) {
         // instance.vnode.el = subTree.el;// 等同上面
         instance.isMounted = true;
       } else {
+        const {next,vnode } = instance;
+        // 更新组件信息
+        if (next) {
+          next.el = vnode.el;
+          updateComponentPreRender(instance, next);
+        }
+
         // 需要比对新旧节点来更新
         const prevSubTree = instance.subTree;
         const { proxy } = instance;
@@ -96,6 +123,12 @@ export function createRenderer(options: any) {
         patch(prevSubTree, subTree, container, instance, anchor);
       }
     });
+  }
+
+  function updateComponentPreRender(instance: any, nextVNode:any) {
+    instance.vnode = nextVNode.vnode;
+    instance.next = null;
+    instance.props = nextVNode.props;
   }
 
   function processElement(
