@@ -1,5 +1,10 @@
 import { NodeTypes } from "./ast";
 
+const enum TagType {
+  Start,
+  end,
+}
+
 export function baseParse(content: string): any {
   const context = createParserContext(content);
   return createRoot(parseChildren(context));
@@ -22,13 +27,47 @@ function createRoot(children: any[] | undefined) {
 function parseChildren(context: any): any[] | undefined {
   const nodes = [];
   let node;
-  if (context.source.startsWith("{{")) {
+  const s = context.source
+  if (s.startsWith("{{")) {
     node = parseInterpolation(context);
+  } else if (s.startsWith("<")) {
+    if (/^<([a-z]*)/i.test(s)) {
+      node = parseElement(context);
+    }
   }
 
   nodes.push(node);
 
   return nodes;
+}
+
+function parseElement(context: any): any {
+  const element = parseTag(context, TagType.Start);
+
+  // TODO: children未实现
+
+  parseTag(context, TagType.end);
+  return element
+  
+}
+
+function parseTag(context: any, tagType: TagType){
+  const match = /^<\/?([a-z]*)/i.exec(context.source) || [];
+  const tag = match[1] || "";
+
+  advanceBy(context, match[0].length);
+  
+  advanceBy(context, 1); // > 符号
+
+  if (tagType === TagType.end) {
+    return;
+  }
+
+  return {
+    type: NodeTypes.ELEMENT,
+    tag: tag,
+    children: []
+  }
 }
 
 function parseInterpolation(context: any) {
@@ -63,3 +102,5 @@ function parseInterpolation(context: any) {
 function advanceBy(context: any, length: number) {
   context.source = context.source.slice(length);
 }
+
+
