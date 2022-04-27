@@ -27,7 +27,7 @@ function createRoot(children: any[] | undefined) {
 function parseChildren(context: any): any[] | undefined {
   const nodes = [];
   let node;
-  const s = context.source
+  const s = context.source;
   if (s.startsWith("{{")) {
     node = parseInterpolation(context);
   } else if (s.startsWith("<")) {
@@ -36,9 +36,32 @@ function parseChildren(context: any): any[] | undefined {
     }
   }
 
+  if (!node) {
+    node = parseText(context);
+  }
+
   nodes.push(node);
 
   return nodes;
+}
+
+function parseText(context: any): any {
+  // TODO 结束标识还没判断
+  const content = parseTextData(context, context.source.length);
+
+  advanceBy(context, content.length);
+
+  return {
+    type: NodeTypes.TEXT,
+    content: content,
+  };
+}
+
+function parseTextData(context:any, length:number){
+  const content = context.source.slice(0, length);
+
+  advanceBy(context, length);
+  return content
 }
 
 function parseElement(context: any): any {
@@ -47,16 +70,15 @@ function parseElement(context: any): any {
   // TODO: children未实现
 
   parseTag(context, TagType.end);
-  return element
-  
+  return element;
 }
 
-function parseTag(context: any, tagType: TagType){
+function parseTag(context: any, tagType: TagType) {
   const match = /^<\/?([a-z]*)/i.exec(context.source) || [];
   const tag = match[1] || "";
 
   advanceBy(context, match[0].length);
-  
+
   advanceBy(context, 1); // > 符号
 
   if (tagType === TagType.end) {
@@ -66,8 +88,8 @@ function parseTag(context: any, tagType: TagType){
   return {
     type: NodeTypes.ELEMENT,
     tag: tag,
-    children: []
-  }
+    children: [],
+  };
 }
 
 function parseInterpolation(context: any) {
@@ -84,8 +106,8 @@ function parseInterpolation(context: any) {
 
   advanceBy(context, openDelimiter.length);
 
-  const rawContentLength = closeIndex - openDelimiter.length
-  const rawContent = context.source.slice(0, rawContentLength)
+  const rawContentLength = closeIndex - openDelimiter.length;
+  const rawContent = parseTextData(context, rawContentLength);
   const content = rawContent.trim();
 
   advanceBy(context, rawContentLength + closeDelimiter.length);
@@ -94,7 +116,7 @@ function parseInterpolation(context: any) {
     type: NodeTypes.INTERPOLATION,
     content: {
       type: NodeTypes.SIMPLE_EXPRESSION,
-      content
+      content,
     },
   };
 }
@@ -102,5 +124,3 @@ function parseInterpolation(context: any) {
 function advanceBy(context: any, length: number) {
   context.source = context.source.slice(length);
 }
-
-
