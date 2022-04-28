@@ -7,7 +7,7 @@ const enum TagType {
 
 export function baseParse(content: string): any {
   const context = createParserContext(content);
-  return createRoot(parseChildren(context));
+  return createRoot(parseChildren(context, []));
 }
 
 // 转成对象
@@ -24,32 +24,49 @@ function createRoot(children: any[] | undefined) {
   };
 }
 
-function parseChildren(context: any): any[] | undefined {
+function parseChildren(context: any, ancestors: any[]): any[] | undefined {
   const nodes = [];
   let node;
-  const s = context.source;
-  if (s.startsWith("{{")) {
-    node = parseInterpolation(context);
-  } else if (s.startsWith("<")) {
-    if (/^<([a-z]*)/i.test(s)) {
-      node = parseElement(context);
+
+  while (!isEnd(context)) {
+    const s = context.source;
+
+    if (s.startsWith("{{")) {
+      node = parseInterpolation(context);
+    } else if (s.startsWith("<")) {
+      if (/^<([a-z]*)/i.test(s)) {
+        node = parseElement(context, ancestors);
+      }
     }
-  }
 
-  if (!node) {
-    node = parseText(context);
-  }
+    if (!node) {
+      node = parseText(context);
+    }
 
-  nodes.push(node);
+    nodes.push(node);
+  }
 
   return nodes;
 }
 
-function parseText(context: any): any {
-  // TODO 结束标识还没判断
-  const content = parseTextData(context, context.source.length);
+function isEnd(context: any) {
+  const s = context.source;
 
-  advanceBy(context, content.length);
+  return !s || s.startsWith("</");
+}
+
+function parseText(context: any): any {
+  let endIndex = context.source.length;
+  const endTokens = ["<", "{{"];
+
+  for (let i = 0; i < endTokens.length; i++) {
+    let index = context.source.indexOf(endTokens[i]);
+    if (index !== -1 && endIndex > index) {
+      endIndex = index;
+    }
+  }
+
+  const content = parseTextData(context, endIndex);
 
   return {
     type: NodeTypes.TEXT,
@@ -57,17 +74,24 @@ function parseText(context: any): any {
   };
 }
 
-function parseTextData(context:any, length:number){
+function parseTextData(context: any, length: number) {
   const content = context.source.slice(0, length);
 
   advanceBy(context, length);
-  return content
+  return content;
 }
 
-function parseElement(context: any): any {
-  const element = parseTag(context, TagType.Start);
+function parseElement(context: any, ancestors: any[]): any {
+  const element: any = parseTag(context, TagType.Start);
+  ancestors.push(element.tag);
+  element.children = parseChildren(context, ancestors);
 
-  // TODO: children未实现
+  // 判断是否有结束标签
+  const needEndToken = ancestors.pop();
+  let match = /^<\/([a-z]*)/i.exec(context.source) || [];
+  if (match.length < 1 || needEndToken !== match[1]) {
+    throw `缺少结束标签:</${needEndToken}>`;
+  }
 
   parseTag(context, TagType.end);
   return element;
@@ -110,7 +134,7 @@ function parseInterpolation(context: any) {
   const rawContent = parseTextData(context, rawContentLength);
   const content = rawContent.trim();
 
-  advanceBy(context, rawContentLength + closeDelimiter.length);
+  advanceBy(context, closeDelimiter.length);
 
   return {
     type: NodeTypes.INTERPOLATION,
