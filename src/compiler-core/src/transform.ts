@@ -1,6 +1,8 @@
-export function transform(root: any, options: any) {
+export function transform(root: any, options: any = {}) {
   const context = createTransformContext(root, options);
   traverseNode(root, context);
+  // root 的 node 固定取 children[0],所以直接封装出来
+  createRootCodegen(root);
 }
 
 function createTransformContext(root: any, option: any): any {
@@ -9,6 +11,10 @@ function createTransformContext(root: any, option: any): any {
     nodeTransforms: option.nodeTransforms || [],
   };
   return context;
+}
+
+function createRootCodegen(root: any) {
+  root.codegenNode = root.children[0];
 }
 
 function traverseNode(node: any, context: any) {
