@@ -21,6 +21,7 @@ function createParserContext(content: string): object {
 function createRoot(children: any[] | undefined) {
   return {
     children,
+    type: NodeTypes.ROOT,
   };
 }
 
