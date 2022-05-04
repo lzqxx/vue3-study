@@ -95,7 +95,7 @@ export function createRenderer(options: any) {
     instance.update = effect(() => {
       if (!instance.isMounted) {
         const { proxy } = instance;
-        const subTree = (instance.subTree = instance.render.call(proxy));
+        const subTree = (instance.subTree = instance.render.call(proxy, proxy));
 
         patch(null, subTree, container, instance, anchor);
         // console.log(instance.vnode === initialVNode); // true
@@ -120,7 +120,7 @@ export function createRenderer(options: any) {
         // 需要比对新旧节点来更新
         const prevSubTree = instance.subTree;
         const { proxy } = instance;
-        const subTree = (instance.subTree = instance.render.call(proxy));
+        const subTree = (instance.subTree = instance.render.call(proxy, proxy));
         patch(prevSubTree, subTree, container, instance, anchor);
       }
     }, {

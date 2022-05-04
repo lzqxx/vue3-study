@@ -4,6 +4,8 @@ import { ShapeFlags } from "../shared/ShapeFlags";
 export const Fragment = Symbol("Fragment");
 export const Text = Symbol("Text");
 
+export { createVNode as createElementVNode };
+
 /**
  * 创建虚拟节点
  * @param type vue组件的optoins

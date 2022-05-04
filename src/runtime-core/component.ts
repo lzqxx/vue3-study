@@ -62,6 +62,11 @@ function handleSetupResult(instance: any, setupResult: any) {
 
 function finishComponentSetup(instance: any) {
   const Component = instance.type;
+  if (compiler && !Component.render) {
+    if (Component.template) {
+      Component.render = compiler(Component.template);
+    }
+  }
 
   if (Component.render) {
     instance.render = Component.render;
@@ -76,4 +81,10 @@ export function getCurrentInstance(): any {
 // 全局变量赋值通过函数方式，方便后续问题排查、断点调试
 export function setCurrentInstance(instance: object | null) {
   currentInstance = instance;
+}
+
+// 为了解耦，compiler 通过外部传入，用于template
+let compiler: any;
+export function registerRuntimeCompiler(_compiler: any) {
+  compiler = _compiler;
 }
